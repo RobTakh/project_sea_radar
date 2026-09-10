@@ -85,17 +85,6 @@ button {
   font-size: 0.9rem;
 }
 
-.map-area {
-  position: relative;
-  flex: 1;
-  min-height: 0;
-}
-
-.map {
-  height: 100%;
-  width: 100%;
-}
-
 .card {
   position: absolute;
   top: 1rem;
@@ -130,4 +119,49 @@ button {
   margin: 0;
   text-align: right;
   overflow-wrap: anywhere;
+}
+
+.map-area {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20rem;
+  flex: 1;
+  min-height: 0;
+}
+
+.map {
+  height: 100%;
+  width: 100%;
+}
+
+.side-panel {
+  z-index: 1000;
+  padding: 1rem;
+  background: white;
+  border-left: 1px solid #cad5dc;
+  overflow-y: auto;
+}
+
+.side-panel .source {
+  margin: 0 0 1rem;
+  color: #52636f;
+}
+
+.side-panel .card {
+  position: static;
+  width: 100%;
+  padding: 1rem 0 0;
+  border: 0;
+  border-top: 1px solid #cad5dc;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+@media (max-width: 700px) {
+  .map-area {
+    grid-template-columns: minmax(0, 1fr) 15rem;
+  }
+
+  .side-panel {
+    padding: 0.75rem;
+  }
 }
