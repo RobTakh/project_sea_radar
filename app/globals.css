@@ -1,0 +1,133 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: #f4f7f9;
+  color: #17232d;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+button {
+  font: inherit;
+}
+
+.vessel-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+}
+
+.vessel-marker > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+}
+
+.vessel-arrow {
+  display: block;
+  width: 0;
+  height: 0;
+  border-right: 0.55rem solid transparent;
+  border-bottom: 1.25rem solid #d93636;
+  border-left: 0.55rem solid transparent;
+  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 55%));
+}
+
+.vessel-dot {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid white;
+  border-radius: 50%;
+  background: #d93636;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 55%);
+}
+
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  background: #12344d;
+  color: white;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.source {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.map-area {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.map {
+  height: 100%;
+  width: 100%;
+}
+
+.card {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1000;
+  width: min(20rem, calc(100% - 2rem));
+  padding: 1rem;
+  border: 1px solid #cad5dc;
+  border-radius: 0.5rem;
+  background: white;
+  box-shadow: 0 0.25rem 1rem rgb(0 0 0 / 20%);
+}
+
+.card h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+}
+
+.card dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.4rem 0.75rem;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.card dt {
+  color: #52636f;
+}
+
+.card dd {
+  margin: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
