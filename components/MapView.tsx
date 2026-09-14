@@ -1,13 +1,13 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import type { Map as LeafletMap } from 'leaflet';
+import type { Map as LeafletMap, Marker } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { mapConfig } from '../lib/config';
 import type { Vessel } from '../lib/types';
 
 type MapViewProps = {
-  vessel: Vessel;
+  vessels: readonly Vessel[];
   onSelect: (vessel: Vessel) => void;
 };
 
@@ -21,9 +21,15 @@ const vesselIcon = (vessel: Vessel) => {
   return `<div data-vessel-id="${vessel.id}" data-icon="${iconType}" style="${rotation}">${shape}</div>`;
 };
 
-export default function MapView({ vessel, onSelect }: MapViewProps) {
+export default function MapView({ vessels, onSelect }: MapViewProps) {
   const mapElement = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
+  const markersRef = useRef(new Map<string, Marker>());
+  const vesselsRef = useRef(vessels);
+  const onSelectRef = useRef(onSelect);
+
+  vesselsRef.current = vessels;
+  onSelectRef.current = onSelect;
 
   useEffect(() => {
     let disposed = false;
@@ -38,14 +44,17 @@ export default function MapView({ vessel, onSelect }: MapViewProps) {
         maxZoom: 19,
       }).addTo(map);
 
-      const icon = L.divIcon({
-        className: 'vessel-marker',
-        html: vesselIcon(vessel),
-        iconSize: [34, 34],
-        iconAnchor: [17, 17],
+      vesselsRef.current.forEach((vessel) => {
+        const icon = L.divIcon({
+          className: 'vessel-marker',
+          html: vesselIcon(vessel),
+          iconSize: [34, 34],
+          iconAnchor: [17, 17],
+        });
+        const marker = L.marker([vessel.lat, vessel.lon], { icon }).addTo(map);
+        marker.on('click', () => onSelectRef.current(vessel));
+        markersRef.current.set(vessel.id, marker);
       });
-      const marker = L.marker([vessel.lat, vessel.lon], { icon }).addTo(map);
-      marker.on('click', () => onSelect(vessel));
 
       mapRef.current = map;
       window.setTimeout(() => map.invalidateSize(), 0);
@@ -56,8 +65,51 @@ export default function MapView({ vessel, onSelect }: MapViewProps) {
       disposed = true;
       mapRef.current?.remove();
       mapRef.current = null;
+      markersRef.current.clear();
     };
   }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const currentIds = new Set(vessels.map((vessel) => vessel.id));
+    markersRef.current.forEach((marker, id) => {
+      if (!currentIds.has(id)) {
+        marker.removeFrom(map);
+        markersRef.current.delete(id);
+      }
+    });
+
+    void import('leaflet').then((L) => {
+      if (!mapRef.current || mapRef.current !== map) return;
+
+      vessels.forEach((vessel) => {
+        const marker = markersRef.current.get(vessel.id);
+        if (marker) {
+          marker.setLatLng([vessel.lat, vessel.lon]);
+          marker.setIcon(L.divIcon({
+            className: 'vessel-marker',
+            html: vesselIcon(vessel),
+            iconSize: [34, 34],
+            iconAnchor: [17, 17],
+          }));
+          return;
+        }
+
+        const newMarker = L.marker([vessel.lat, vessel.lon], {
+          icon: L.divIcon({
+            className: 'vessel-marker',
+            html: vesselIcon(vessel),
+            iconSize: [34, 34],
+            iconAnchor: [17, 17],
+          }),
+        }).addTo(map);
+        newMarker.on('click', () => onSelectRef.current(vessel));
+        markersRef.current.set(vessel.id, newMarker);
+      });
+    });
+  }, [vessels]);
 
   return <div ref={mapElement} className="map" aria-label="Карта пролива Дувр" />;
 }

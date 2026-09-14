@@ -1,3 +1,5 @@
+export const DEMO_TICK_MS = 2000;
+
 export const mapConfig = {
   bounds: {
     south: 50.75,
@@ -9,13 +11,68 @@ export const mapConfig = {
   zoom: 10,
 };
 
-export const demoVessel = {
-  id: 'demo-1',
-  name: 'Демо-судно 1',
-  lat: 51.03,
-  lon: 1.52,
-  speedKnots: 12,
-  courseDeg: 135,
-  timestamp: '2026-09-10T12:00:00Z',
-  source: 'demo',
-} as const;
+export const demoVessels = [
+  {
+    id: 'demo-1',
+    name: 'Демо-судно 1',
+    lat: 50.92,
+    lon: 1.25,
+    speedKnots: 12,
+    courseDeg: 90,
+    timestamp: '2026-09-10T12:00:00Z',
+    source: 'demo',
+    route: [
+      { lat: 50.92, lon: 1.25 },
+      { lat: 50.92, lon: 1.29 },
+      { lat: 50.92, lon: 1.33 },
+      { lat: 50.92, lon: 1.37 },
+      { lat: 50.92, lon: 1.41 },
+      { lat: 50.92, lon: 1.45 },
+      { lat: 50.92, lon: 1.50 },
+      { lat: 50.92, lon: 1.55 },
+    ],
+  },
+  {
+    id: 'demo-2',
+    name: 'Демо-судно 2',
+    lat: 50.82,
+    lon: 1.25,
+    speedKnots: 9,
+    courseDeg: 90,
+    timestamp: '2026-09-10T12:00:00Z',
+    source: 'demo',
+    route: [
+      { lat: 50.82, lon: 1.25 },
+      { lat: 50.82, lon: 1.28 },
+      { lat: 50.82, lon: 1.31 },
+      { lat: 50.82, lon: 1.34 },
+      { lat: 50.82, lon: 1.37 },
+      { lat: 50.82, lon: 1.40 },
+      { lat: 50.82, lon: 1.43 },
+      { lat: 50.82, lon: 1.46 },
+      { lat: 50.82, lon: 1.49 },
+    ],
+  },
+  {
+    id: 'demo-3',
+    name: 'Демо-судно 3',
+    lat: 50.98,
+    lon: 1.42,
+    speedKnots: 14,
+    courseDeg: 60,
+    timestamp: '2026-09-10T12:00:00Z',
+    source: 'demo',
+    route: [
+      { lat: 50.98, lon: 1.42 },
+      { lat: 50.99, lon: 1.45 },
+      { lat: 51.00, lon: 1.48 },
+      { lat: 51.01, lon: 1.51 },
+      { lat: 51.02, lon: 1.54 },
+      { lat: 51.03, lon: 1.57 },
+      { lat: 51.04, lon: 1.60 },
+      { lat: 51.05, lon: 1.63 },
+      { lat: 51.06, lon: 1.66 },
+      { lat: 51.07, lon: 1.69 },
+    ],
+  },
+] satisfies readonly import('./types').DemoVessel[];

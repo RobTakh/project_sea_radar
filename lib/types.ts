@@ -8,3 +8,12 @@ export type Vessel = {
   timestamp: string;
   source: 'demo' | 'aisstream';
 };
+
+export type RoutePoint = {
+  lat: number;
+  lon: number;
+};
+
+export type DemoVessel = Vessel & {
+  route: readonly RoutePoint[];
+};
