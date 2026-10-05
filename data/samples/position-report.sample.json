@@ -1,0 +1,36 @@
+{
+  "ok": true,
+  "raw": {
+    "MetaData": {
+      "MMSI": 636019364,
+      "MMSI_String": 636019364,
+      "ShipName": "MSC TAMISHKA F      ",
+      "latitude": 51.19181,
+      "longitude": 1.68067,
+      "time_utc": "2026-09-17 17:19:13.143273107 +0000 UTC"
+    },
+    "MessageType": "PositionReport",
+    "Message": {
+      "PositionReport": {
+        "MessageID": 3,
+        "RepeatIndicator": 0,
+        "UserID": 636019364,
+        "Valid": true,
+        "NavigationalStatus": 0,
+        "RateOfTurn": 0,
+        "Sog": 13.5,
+        "PositionAccuracy": false,
+        "Longitude": 1.6806683333333334,
+        "Latitude": 51.191813333333336,
+        "Cog": 228.6,
+        "TrueHeading": 226,
+        "Timestamp": 9,
+        "SpecialManoeuvreIndicator": 0,
+        "Spare": 0,
+        "Raim": false,
+        "CommunicationState": 84045
+      }
+    }
+  },
+  "collectedAt": "2026-09-17T17:19:14.693Z"
+}

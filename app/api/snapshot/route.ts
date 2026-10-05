@@ -1,5 +1,12 @@
-import { mapConfig } from '../../../lib/config';
-import { readFirstMessage, type ReaderErrorCode } from '../../../lib/aisstream/reader';
+import { SNAPSHOT_WINDOW_MS, mapConfig } from '../../../lib/config';
+import {
+  defaultReaderClock,
+  readSnapshot,
+  type ReaderClock,
+  type ReaderErrorCode,
+  type ReaderOptions,
+  type ReaderResult,
+} from '../../../lib/aisstream/reader';
 import { getAisstreamApiKey } from '../../../lib/server/aisstream-key';
 
 export const runtime = 'nodejs';
@@ -13,8 +20,18 @@ const ERROR_MESSAGES: Record<ReaderErrorCode | 'no_api_key', string> = {
   internal: 'Внутренняя ошибка сервера',
 };
 
-export async function GET(request: Request) {
-  const attemptedAt = new Date().toISOString();
+type SnapshotReader = (options: ReaderOptions) => Promise<ReaderResult>;
+
+type SnapshotHandlerOptions = {
+  clock?: ReaderClock;
+  reader?: SnapshotReader;
+};
+
+const createSnapshotHandler = ({
+  clock = defaultReaderClock,
+  reader = readSnapshot,
+}: SnapshotHandlerOptions = {}) => async (request: Request) => {
+  const attemptedAt = clock.now().toISOString();
   const apiKey = getAisstreamApiKey();
 
   if (apiKey === null) {
@@ -29,10 +46,11 @@ export async function GET(request: Request) {
   }
 
   try {
-    const result = await readFirstMessage({
+    const result = await reader({
       apiKey,
       bounds: mapConfig.bounds,
       signal: request.signal,
+      clock,
     });
 
     if (!result.ok) {
@@ -48,8 +66,12 @@ export async function GET(request: Request) {
 
     return Response.json({
       ok: true,
-      raw: result.raw,
+      vessels: result.vessels,
       collectedAt: result.collectedAt.toISOString(),
+      windowSeconds: SNAPSHOT_WINDOW_MS / 1000,
+      count: result.vessels.length,
+      truncated: result.truncated,
+      reason: result.reason,
     });
   } catch {
     return Response.json({
@@ -61,4 +83,8 @@ export async function GET(request: Request) {
       },
     }, { status: 502 });
   }
+};
+
+export async function GET(request: Request) {
+  return createSnapshotHandler()(request);
 }

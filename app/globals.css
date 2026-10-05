@@ -141,9 +141,33 @@ button {
   overflow-y: auto;
 }
 
+.load-button {
+  width: 100%;
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #1b5d84;
+  border-radius: 0.35rem;
+  background: #17618e;
+  color: white;
+  cursor: pointer;
+}
+
+.load-button:disabled {
+  background: #8da3b1;
+  border-color: #8da3b1;
+  cursor: wait;
+}
+
 .side-panel .source {
   margin: 0 0 1rem;
   color: #52636f;
+}
+
+.status-message,
+.attempted-at {
+  display: block;
+  margin: 0 0 1rem;
+  color: #17232d;
 }
 
 .side-panel .card {

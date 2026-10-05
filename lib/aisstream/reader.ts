@@ -1,4 +1,6 @@
-import type { mapConfig } from '../config';
+import { SNAPSHOT_MAX_VESSELS, SNAPSHOT_WINDOW_MS, mapConfig } from '../config';
+import type { Vessel } from '../types';
+import { parsePositionReport } from './parser';
 import {
   createNativeSocket,
   type AisSocket,
@@ -6,11 +8,14 @@ import {
 } from './socket';
 
 const AISSTREAM_URL = 'wss://stream.aisstream.io/v0/stream';
-const DEFAULT_TIMEOUT_MS = 15_000;
 
 type Bounds = typeof mapConfig.bounds;
-
 type TimerHandle = ReturnType<typeof setTimeout>;
+
+type StoredVessel = {
+  vessel: Vessel;
+  timestampMs: number;
+};
 
 export type ReaderClock = {
   now: () => Date;
@@ -18,10 +23,14 @@ export type ReaderClock = {
   clearTimeout: (handle: TimerHandle) => void;
 };
 
+export type SnapshotReason = 'window_elapsed' | 'limit_reached';
+
 export type ReaderSuccess = {
   ok: true;
-  raw: unknown | null;
+  vessels: Vessel[];
   collectedAt: Date;
+  truncated: boolean;
+  reason: SnapshotReason;
 };
 
 export type ReaderErrorCode =
@@ -44,10 +53,9 @@ export type ReaderOptions = {
   signal?: AbortSignal;
   socketFactory?: SocketFactory;
   clock?: ReaderClock;
-  timeoutMs?: number;
 };
 
-const systemClock: ReaderClock = {
+export const defaultReaderClock: ReaderClock = {
   now: () => new Date(),
   setTimeout: (callback, delayMs) => setTimeout(callback, delayMs),
   clearTimeout: (handle) => clearTimeout(handle),
@@ -62,14 +70,16 @@ const subscriptionFor = (apiKey: string, bounds: Bounds) => ({
   FilterMessageTypes: ['PositionReport'],
 });
 
-export const readFirstMessage = ({
+const timestampMilliseconds = (vessel: Vessel): number => Date.parse(vessel.timestamp);
+
+export const readSnapshot = ({
   apiKey,
   bounds,
   signal,
   socketFactory = createNativeSocket,
-  clock = systemClock,
-  timeoutMs = DEFAULT_TIMEOUT_MS,
+  clock = defaultReaderClock,
 }: ReaderOptions): Promise<ReaderResult> => new Promise((resolve) => {
+  const vessels = new Map<string, StoredVessel>();
   let socket: AisSocket | null = null;
   let settled = false;
   let opened = false;
@@ -79,18 +89,28 @@ export const readFirstMessage = ({
 
   const cleanup = () => {
     if (timer !== null) {
-      clock.clearTimeout(timer);
+      try {
+        clock.clearTimeout(timer);
+      } catch {
+        // Continue cleanup even if the injected clock rejects clearing a timer.
+      }
       timer = null;
     }
 
-    unsubscribe.splice(0).forEach((removeListener) => removeListener());
+    unsubscribe.splice(0).forEach((removeListener) => {
+      try {
+        removeListener();
+      } catch {
+        // The selected result must not be replaced by listener cleanup failure.
+      }
+    });
     signal?.removeEventListener('abort', onAbort);
 
     if (socket !== null) {
       try {
         socket.close();
       } catch {
-        // The requested outcome must not be replaced by a close failure.
+        // The selected result must not be replaced by a close failure.
       }
       socket = null;
     }
@@ -105,6 +125,16 @@ export const readFirstMessage = ({
 
   const fail = (code: ReaderErrorCode) => {
     finish({ ok: false, code, attemptedAt: clock.now() });
+  };
+
+  const success = (reason: SnapshotReason, truncated: boolean) => {
+    finish({
+      ok: true,
+      vessels: Array.from(vessels.values(), ({ vessel }) => vessel),
+      collectedAt: clock.now(),
+      truncated,
+      reason,
+    });
   };
 
   const onAbort = () => {
@@ -125,7 +155,27 @@ export const readFirstMessage = ({
 
   const onMessage = (raw: unknown) => {
     if (settled || !subscribed) return;
-    finish({ ok: true, raw, collectedAt: clock.now() });
+
+    try {
+      const vessel = parsePositionReport(raw);
+      if (vessel === null) return;
+
+      const timestampMs = timestampMilliseconds(vessel);
+      const previous = vessels.get(vessel.id);
+      if (previous !== undefined) {
+        if (timestampMs > previous.timestampMs) {
+          vessels.set(vessel.id, { vessel, timestampMs });
+        }
+        return;
+      }
+
+      vessels.set(vessel.id, { vessel, timestampMs });
+      if (vessels.size >= SNAPSHOT_MAX_VESSELS) {
+        success('limit_reached', true);
+      }
+    } catch {
+      fail('internal');
+    }
   };
 
   const onError = () => {
@@ -138,14 +188,21 @@ export const readFirstMessage = ({
     fail(opened && subscribed ? 'disconnected' : 'connect_failed');
   };
 
+  if (signal?.aborted) {
+    fail('internal');
+    return;
+  }
+
   signal?.addEventListener('abort', onAbort, { once: true });
   timer = clock.setTimeout(() => {
     if (subscribed) {
-      finish({ ok: true, raw: null, collectedAt: clock.now() });
+      success('window_elapsed', false);
     } else {
       fail('connect_failed');
     }
-  }, timeoutMs);
+  }, SNAPSHOT_WINDOW_MS);
+
+  if (settled) return;
 
   try {
     socket = socketFactory(AISSTREAM_URL);
@@ -157,3 +214,6 @@ export const readFirstMessage = ({
     fail('connect_failed');
   }
 });
+
+// Keep the previous reader export while its implementation now collects a snapshot.
+export const readFirstMessage = readSnapshot;
